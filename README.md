@@ -60,6 +60,9 @@ n8n будет доступен по адресу: http://localhost:5678
 ### 3. Импорт Workflow и настройка Credentials
 В интерфейсе n8n создайте новый Workflow и выберите Import from File, указав файл workflow.json из этого репозитория.
 
+Установите Community Node в n8n:
+В n8n перейдите в Settings -> Community Nodes -> Install a community node и установите n8n-nodes-lmstudio. Без этого узлы нейросети в импортированном workflow будут неактивны.
+
 Настройте учетные данные (Credentials):
 
 LM Studio API: Host URL: http://host.docker.internal:1234, API Key: оставить пустым.
