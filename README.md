@@ -21,4 +21,5 @@
 
 ## Скриншоты
 <img width="943" height="266" alt="image" src="https://github.com/user-attachments/assets/589a7902-aa21-4ee4-ac5a-bbeae25f7c2f" />
-<img width="900" height="235" alt="image" src="https://github.com/user-attachments/assets/470a5d19-7d62-45ef-ab7b-bfa548b5bf3b" />
+<img width="918" height="650" alt="image" src="https://github.com/user-attachments/assets/204cd103-0e91-4458-8c73-d085e3a0ab19" />
+
