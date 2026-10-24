@@ -1,0 +1,191 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "modelName": "google/gemma-4-e2b",
+        "message": "=Ты — эксперт отдела продаж компании по изготовлению клееного бруса.\nТвоя задача — проанализировать текст запроса клиента и выделить все параметры.\n\nВнимательно прочитай текст и определи:\npart_name - деталь, которая нужна клиенту, указывай её в именительном падеже\nwidth_mm, height_mm, length_mm — ширина, высота длина в миллиметрах. Если пользователь указал в других единицах измерения, переведи в миллиметры.\nQuantity — количество деталей (в штуках).\nmaterial — материал, из которого должна быть сделана деталь.\ncomment — Что нужно пользователю.\n\nЕсли что-то не указано явно, поставь в ячейке null.\nДеталей может быть несколько.\n\nТакже напиши «Вопросы». Там обозначь, чего не хватает и что ты не понял в запросе пользователя. \n\nЗапрос:\n{{ $json.clean_text }}",
+        "jsonSchema": "{} ",
+        "temperature": 1,
+        "timeout": 1000
+      },
+      "type": "n8n-nodes-lmstudio.lmStudioSimpleMessage",
+      "typeVersion": 1,
+      "position": [
+        416,
+        -48
+      ],
+      "id": "a8e95d3e-941b-445c-b4ff-6bfc2d45afb9",
+      "name": "LM Studio Simple Message",
+      "credentials": {
+        "lmStudioApi": {
+          "id": "lllMVgR0SuwkY9HS",
+          "name": "LM Studio account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $json.response;\nconst items = data.items || [];\nconst questions = data.clarification_questions || [];\n\nconst rows = items.map(item => `\n  <tr>\n    <td>${item.part_name ?? '—'}</td>\n    <td>${item.width_mm ?? '?'}</td>\n    <td>${item.height_mm ?? '?'}</td>\n    <td>${item.length_mm ?? '?'}</td>\n    <td>${item.quantity ?? '?'}</td>\n    <td>${item.material ?? '—'}</td>\n    <td>${item.comment ?? '—'}</td>\n  </tr>\n`).join('');\n\nconst table = `\n<table border=\"1\" cellpadding=\"8\" cellspacing=\"0\" style=\"border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; font-size: 14px;\">\n  <thead>\n    <tr style=\"background-color: #f2f2f2; text-align: left;\">\n      <th>Название детали</th>\n      <th>Требуемая ширина (мм)</th>\n      <th>Требуемая высота (мм)</th>\n      <th>Требуемая длина (мм)</th>\n      <th>Количество (шт)</th>\n      <th>Материал</th>\n      <th>Комментарий</th>\n    </tr>\n  </thead>\n  <tbody>\n    ${rows}\n  </tbody>\n</table>\n`;\n\nconst questionsBlock = questions.length > 0 \n  ? `<h3 style=\"font-family: Arial, sans-serif;\">Вопросы для уточнения:</h3><ul style=\"font-family: Arial, sans-serif;\">${questions.map(q => `<li>${q}</li>`).join('')}</ul>`\n  : '<p style=\"font-family: Arial, sans-serif;\">Уточнений не требуется.</p>';\n\nreturn [{\n  json: {\n    html_email: table + questionsBlock,\n    email_subject: data.subject || 'Ответ на ваш запрос' \n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        -48
+      ],
+      "id": "8c6ed3fc-35af-4d1a-91a5-197ed6e5e9d3",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "fromEmail": "mailbot667@yandex.ru",
+        "toEmail": "alemaevm@yandex.ru",
+        "subject": "={{ $json.email_subject }}",
+        "html": "={{ $json.html_email }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1120,
+        -48
+      ],
+      "id": "c8e796f4-084c-4638-a6c2-60d9951f8283",
+      "name": "Send an Email",
+      "webhookId": "c9acc026-8209-4936-bab2-e350949071c8",
+      "credentials": {
+        "smtp": {
+          "id": "kzihVKhpEUNDs3YH",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "google/gemma-4-e2b",
+        "message": "=КРИТИЧЕСКОЕ ПРАВИЛО ПО МАССИВУ items:\nВ массив \"items\" попадают ТОЛЬКО физические детали. \n\nВсе вопросы должны попадать ТОЛЬКО в отдельный массив \"clarification_questions\". Вопросы должны быть на русском языке.\n\nЗапросы:\n{{ $json.response }}",
+        "jsonSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"subject\": { \"type\": \"string\" },\n    \"items\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"part_name\": { \"type\": [\"string\", \"null\"] },\n          \"width_mm\": { \"type\": [\"number\", \"null\"] },\n          \"height_mm\": { \"type\": [\"number\", \"null\"] },\n          \"length_mm\": { \"type\": [\"number\", \"null\"] },\n          \"quantity\": { \"type\": [\"integer\", \"null\"] },\n          \"material\": { \"type\": [\"string\", \"null\"] },\n          \"comment\": { \"type\": [\"string\", \"null\"] }\n        },\n        \"required\": [\"part_name\", \"width_mm\", \"height_mm\", \"length_mm\", \"quantity\", \"material\", \"comment\"],\n        \"additionalProperties\": false\n      }\n    },\n    \"clarification_questions\": {\n      \"type\": \"array\",\n      \"items\": { \"type\": \"string\" }\n    }\n  },\n  \"required\": [\"subject\", \"items\", \"clarification_questions\"],\n  \"additionalProperties\": false\n}",
+        "temperature": 0.1,
+        "timeout": 1000
+      },
+      "type": "n8n-nodes-lmstudio.lmStudioSimpleMessage",
+      "typeVersion": 1,
+      "position": [
+        640,
+        -48
+      ],
+      "id": "6c035273-97c0-4037-aa89-87456e02e67d",
+      "name": "LM Studio Simple Message1",
+      "credentials": {
+        "lmStudioApi": {
+          "id": "lllMVgR0SuwkY9HS",
+          "name": "LM Studio account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2.2,
+      "position": [
+        16,
+        -48
+      ],
+      "id": "18d21d54-bcba-4b55-a707-77b5e17483b0",
+      "name": "Email Trigger (IMAP)",
+      "credentials": {
+        "imap": {
+          "id": "GtFufTxryrle73tb",
+          "name": "IMAP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Берем HTML-текст письма и удаляем все теги с помощью регулярного выражения\nconst cleanText = $json.textHtml.replace(/<[^>]*>?/gm, '').trim();\n\nreturn [{\n  json: {\n    clean_text: cleanText\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        -48
+      ],
+      "id": "ca1a781a-161d-4929-9f58-53a1e3adb4f0",
+      "name": "Code in JavaScript1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "LM Studio Simple Message": {
+      "main": [
+        [
+          {
+            "node": "LM Studio Simple Message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Send an Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LM Studio Simple Message1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Trigger (IMAP)": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "LM Studio Simple Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "f89af30e-bd7b-4912-bf02-655fea679b4b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "aa9c03f5aa7e7133f47c5079d8584ce345a8a02bb74ffc9ff9dfbb5f41075371"
+  },
+  "nodeGroups": [],
+  "id": "cblhpU9VxGQuo8iH",
+  "tags": []
+}
