@@ -43,8 +43,7 @@
 ### 2. Запуск инфраструктуры (Docker)
 1. Клонируйте этот репозиторий:
    ```bash
-   git clone https://github.com/ВАШ_НИК/ИМЯ_РЕПОЗИТОРИЯ.git
-   cd ИМЯ_РЕПОЗИТОРИЯ
+   git clone https://github.com/bogdanych/integrate_llm.git
 
 2. Создайте файл .env в корне проекта и добавьте секретный токен для связи n8n и Python-раннера:
 
